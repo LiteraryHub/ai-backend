@@ -1,65 +1,44 @@
+import os
 import io
 from docx import Document
-from fastapi import FastAPI, File, UploadFile, APIRouter
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import JSONResponse
 from src.ocr.arabic_ocr import extract_text_from_image
 
 router = APIRouter()
 
-@router.post("/extract-text-pdf")
-async def extract_text_endpoint(pdf_file: UploadFile = File(...)):
+@router.get("/extract-text-pdf")
+async def extract_text_from_pdf(file_path: str = Query(..., description="The path to the PDF file")):
     """
-    Extracts text from a PDF file using OCR configured for Arabic language.
-    
-    Args:
-        pdf_file (UploadFile): The PDF file to extract text from.
-        
-    Returns:
-        JSONResponse: A JSON response containing the extracted text.
+    Extracts text from a PDF file located at the given path using OCR configured for Arabic language.
     """
-    
-    if not pdf_file.filename.endswith('.pdf'):
+    if not file_path.endswith('.pdf') or not os.path.exists(file_path):
         raise HTTPException(
-            status_code=400, detail="Invalid file format. Please upload a PDF file.")
+            status_code=400, detail="Invalid file format or file does not exist. Please provide a valid PDF file path.")
 
     try:
-        extracted_texts = extract_text_from_image(await pdf_file.read())
+        with open(file_path, "rb") as file:
+            extracted_texts = extract_text_from_image(file.read())
         return JSONResponse(content={"extracted_texts": extracted_texts})
     except ValueError as ve:
         raise HTTPException(status_code=500, detail=str(ve))
 
 
-@router.post("/extract-text-word")
-async def upload_word_func(file: UploadFile = File(...)):
+@router.get("/extract-text-word")
+async def extract_text_from_word(file_path: str = Query(..., description="The path to the Word file")):
     """
-    This function receives a .docx file, reads its content, and extracts the text from it.
-
-    The function first checks if the uploaded file is a .docx file. If not, it raises an HTTPException with a status code of 400 and an error message. 
-    If the file is a .docx file, it reads the content of the file into a bytes object and uses the Document 
-    class from the docx module to load the Word file.
-
-    It then iterates over all the paragraphs in the document, extracts the text from each paragraph, and 
-    appends it to a list. The list of strings is then joined into a single string with a newline character 
-    ("\n") as the separator.
-
-    The function returns a JSONResponse containing a dictionary with the filename and the extracted text.
-
-    Args:
-        file (UploadFile): The .docx file to be processed.
-
-    Returns:
-        JSONResponse: A JSON response containing a dictionary with the filename and the extracted text.
+    Extracts text from a Word (.docx) file located at the given path.
     """
-    if not file.filename.endswith(".docx"):
-        raise HTTPException(status_code=400, detail="This service only supports .docx files.")
+    if not file_path.endswith(".docx") or not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=400, detail="Invalid file format or file does not exist. Please provide a valid Word file path.")
 
     try:
-        content = await file.read()
-        document = Document(io.BytesIO(content))
+        with open(file_path, "rb") as file:
+            content = file.read()
+            document = Document(io.BytesIO(content))
 
-        extracted_texts = [{'page_number': i+1, 'text': para.text}
-                           for i, para in enumerate(document.paragraphs) if para.text.strip()]
+        extracted_texts = [{'page_number': i + 1, 'text': para.text} for i, para in enumerate(document.paragraphs) if para.text.strip()]
         return JSONResponse(content={"extracted_texts": extracted_texts})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
