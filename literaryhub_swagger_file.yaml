@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: LiteraryHub AI API
+  version: 1.0.0
+  description: |
+    The LiteraryHub AI API provides a robust suite of tools tailored for publishers and authors. It facilitates the creation of audiobooks from texts, generation of custom book covers, and updates to unpublished manuscripts in Word or PDF formats. Key features include plagiarism detection and identification of restricted topics, empowering users to create and refine content with confidence and compliance. This API serves as a comprehensive resource for automating and enhancing the publication process.
+paths:
+  /v2/text-to-speech:
+    post:
+      tags:
+        - audiobook
+      summary: Converts text to speech
+      description: This endpoint receives text and converts it into spoken audio, returning the path to the generated MP3 file. Ideal for transforming book content into an easily accessible audiobook format.
+      operationId: textToSpeechV2
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookTextBody'
+      responses:
+        '200':
+          description: Successfully generated the audio file
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_book_output_path:
+                    type: string
+                    description: The server path to the generated audio file in MP3 format
+        '400':
+          description: Invalid request data
+        '500':
+          description: Server error
+components:
+  schemas:
+    BookTextBody:
+      type: object
+      required:
+        - text
+        - book_name
+      properties:
+        text:
+          type: string
+          description: The text to be converted into speech
+        book_name:
+          type: string
+          description: The name of the book associated with the text
