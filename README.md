@@ -59,10 +59,10 @@ Please use the following dev environment:
 ### Testing
 - **Unit Tests**: The `src/test` directory contains unit tests for each group or endpoint, ensuring comprehensive test coverage.
     
-    To run the unit tests, navigate to the project's root directory in your terminal and run the following command:
-    ```bash
-    python -m unittest discover -s src/test -p "*_test.py"
-    ```
+To run the unit tests, navigate to the project's root directory in your terminal and run the following command:
+```bash
+python -m unittest discover -s src/test -p "*_test.py"
+```
 
 
 ### Creating the docker image
