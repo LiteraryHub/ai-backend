@@ -1,27 +1,4 @@
 from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-from src.model.idea import Idea
-
-load_dotenv()
-
-
-class DataAction:
-    """
-    Enum for the type of data action that was performed on the database.
-    
-    Attributes:
-        INSERT (str): Insert a new record into the database.
-        UPDATE (str): Update an existing record in the database.
-        DELETE (str): Delete an existing record from the database.
-        FAILED (str): The action failed.
-        NOOP (str): No operation was performed.
-    """
-    INSERT = "insert"
-    UPDATE = "update"
-    DELETE = "delete"
-    FAILED = "failed"
-    NOOP = "noop"
 
 class DBConnection:
     # Connection URI for Cosmos DB MongoDB API
@@ -46,3 +23,6 @@ class DBConnection:
     def get_collection(self, collection_name: str):
         db_collection = self.db.get_collection(collection_name)
         return db_collection
+    
+    def get_db(self):
+        return self.db
