@@ -39,3 +39,23 @@ def add_embeddings(json_input):
 
     json_input["extracted_texts"] = update_items
     return json_input
+
+
+if __name__ == "__main__":
+    # Example JSON input
+    json_input = {
+        "extracted_texts": [
+            {"page_number": 1, "paragraph_index": 1, "text": "أهلاً وسهلاً"},
+            {"page_number": 1, "paragraph_index": 2, "text": "مرحباً"},
+        ]
+    }
+
+    # Add embeddings to the extracted texts
+    json_output = add_embeddings(json_input)
+
+    # display cosine similarity between the two paragraphs embeddings
+    from sklearn.metrics.pairwise import cosine_similarity
+    emb1 = json_output["extracted_texts"][0]["embedding"]
+    emb2 = json_output["extracted_texts"][1]["embedding"]
+    similarity = cosine_similarity([emb1], [emb2])[0][0]
+    print(f"Cosine similarity between the two paragraphs: {similarity}")
