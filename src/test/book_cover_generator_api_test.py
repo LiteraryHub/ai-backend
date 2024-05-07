@@ -8,7 +8,7 @@ import numpy as np
 from io import BytesIO
 
 # Replace this URL with the actual URL where your Flask application is running
-API_URL = 'http://127.0.0.1:5002'
+API_URL = 'http://127.0.0.1:8001'
  
 
 def test_get_book_cover():
@@ -22,7 +22,7 @@ def test_get_book_cover():
     }
 
     # Make a POST request to the API to generate the book cover
-    response = requests.post(f'{API_URL}/get_book_cover', json=data)
+    response = requests.post(f'{API_URL}/get-book-cover', json=data)
 
     # Check if the request was successful (status code 200)
     if response.status_code == 200:

@@ -5,6 +5,7 @@ import uvicorn
 from src.api.audiobook_generator.endpoints import router as audiobook_generator_router
 # from src.api.arabic_pdf_ocr.endpoints import router as arabic_pdf_ocr_router
 from src.api.word_text_extractor import router as word_text_extractor_router
+from src.api.book_cover_generator.endpoints import router as book_cover_generator_router
 import warnings
 
 # Ignore PyTorch UserWarnings
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(audiobook_generator_router, prefix='/audiobook', tags=['Audiobook Generator'])
 # app.include_router(arabic_pdf_ocr_router, prefix='/ocr', tags=['Arabic PDF OCR'])
 app.include_router(word_text_extractor_router, prefix='/word-text-extractor', tags=['Word Text Extractor'])
+app.include_router(book_cover_generator_router, prefix='/book-cover', tags=['Book Cover Generator'])
 
 
 if __name__ == '__main__':
