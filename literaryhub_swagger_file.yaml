@@ -81,7 +81,7 @@ paths:
         '500':
           description: Error during text extraction
 
-  /v2/text-to-speech:
+  /audiobook/v2/text-to-speech:
     post:
       tags:
         - audiobook
@@ -107,6 +107,54 @@ paths:
                     description: The server path to the generated audio file in MP3 format
         '400':
           description: Invalid request data
+        '500':
+          description: Server error
+  
+  /book-cover/generate:
+    post:
+      tags:
+        - book cover generator
+      summary: Generates a custom book cover
+      description: |
+        Generates a custom book cover based on the provided title, summary, and authors. This endpoint is designed to create visually appealing covers for Arabic books, utilizing details such as the book title, summary, and author names to influence the design. The response includes the generated cover image in PNG format.
+      operationId: generateBookCover
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                book_title:
+                  type: string
+                  description: Title of the book for which the cover is being generated.
+                book_summary:
+                  type: string
+                  description: A brief summary of the book that can influence the cover's design.
+                arabic_authors:
+                  type: array
+                  items:
+                    type: string
+                  description: List of Arabic authors' names to be featured on the book cover.
+                num_inference_steps:
+                  type: integer
+                  default: 5
+                  description: Number of inference steps to be used in the generation process.
+                guidance_scale:
+                  type: number
+                  default: 0.6
+                  description: The scale of guidance applied during the cover generation to maintain relevance to the input parameters.
+      responses:
+        '200':
+          description: Successfully generated the book cover.
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+                description: The generated book cover image in PNG format.
+        '400':
+          description: Invalid input parameters
         '500':
           description: Server error
 components:
