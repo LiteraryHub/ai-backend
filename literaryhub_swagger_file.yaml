@@ -5,6 +5,82 @@ info:
   description: |
     The LiteraryHub AI API provides a robust suite of tools tailored for publishers and authors. It facilitates the creation of audiobooks from texts, generation of custom book covers, and updates to unpublished manuscripts in Word or PDF formats. Key features include plagiarism detection and identification of restricted topics, empowering users to create and refine content with confidence and compliance. This API serves as a comprehensive resource for automating and enhancing the publication process.
 paths:
+  /extractor/extract-text-pdf:
+    get:
+      tags:
+        - text extractor
+      summary: Extracts text from a PDF file
+      description: |
+        Extracts text from a PDF file using Optical Character Recognition (OCR) configured specifically for Arabic text. The endpoint requires a valid PDF file path and returns the extracted text as JSON.
+      operationId: extractTextFromPDF
+      parameters:
+        - in: query
+          name: file_path
+          required: true
+          schema:
+            type: string
+          description: The path to the PDF file
+      responses:
+        '200':
+          description: Text extraction successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  extracted_texts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page_number:
+                          type: integer
+                        text:
+                          type: string
+                    description: An array of objects containing page numbers and extracted texts.
+        '400':
+          description: Invalid file format or file does not exist
+        '500':
+          description: Error during text extraction
+          
+  /extractor/extract-text-word:
+    get:
+      tags:
+        - text extractor
+      summary: Extracts text from a Word document
+      description: |
+        Extracts text from a Word (.docx) document using a simple text extraction process. The endpoint needs a valid Word file path and returns the extracted text as JSON.
+      operationId: extractTextFromWord
+      parameters:
+        - in: query
+          name: file_path
+          required: true
+          schema:
+            type: string
+          description: The path to the Word file
+      responses:
+        '200':
+          description: Text extraction successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  extracted_texts:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        page_number:
+                          type: integer
+                        text:
+                          type: string
+                    description: An array of objects containing page numbers and extracted texts.
+        '400':
+          description: Invalid file format or file does not exist
+        '500':
+          description: Error during text extraction
+
   /v2/text-to-speech:
     post:
       tags:
