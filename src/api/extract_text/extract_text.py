@@ -29,16 +29,30 @@ async def extract_text_from_word(file_path: str = Query(..., description="The pa
     """
     Extracts text from a Word (.docx) file located at the given path.
     """
+    # Validate file path and extension
     if not file_path.endswith(".docx") or not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=400, detail="Invalid file format or file does not exist. Please provide a valid Word file path.")
+        raise HTTPException(status_code=400, detail="Invalid file format or file does not exist. Please provide a valid Word file path.")
 
     try:
+        # Open and read the Word file
         with open(file_path, "rb") as file:
             content = file.read()
             document = Document(io.BytesIO(content))
 
-        extracted_texts = [{'page_number': i + 1, 'text': para.text} for i, para in enumerate(document.paragraphs) if para.text.strip()]
+        # Extract texts with paragraph index and page numbers
+        extracted_texts = []
+        paragraph_index = 0
+        for para in document.paragraphs:
+            if para.text.strip():  # Ensure the paragraph contains text
+                extracted_texts.append({
+                    'paragraph_index': paragraph_index,
+                    # Page numbers are not directly available in .docx
+                    'page_number': 'Not directly available',
+                    'text': para.text
+                })
+                paragraph_index += 1
+
         return JSONResponse(content={"extracted_texts": extracted_texts})
     except Exception as e:
+        # Handle unexpected errors
         raise HTTPException(status_code=500, detail=str(e))

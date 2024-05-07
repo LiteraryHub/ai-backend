@@ -4,6 +4,7 @@ info:
   version: 1.0.0
   description: |
     The LiteraryHub AI API provides a robust suite of tools tailored for publishers and authors. It facilitates the creation of audiobooks from texts, generation of custom book covers, and updates to unpublished manuscripts in Word or PDF formats. Key features include plagiarism detection and identification of restricted topics, empowering users to create and refine content with confidence and compliance. This API serves as a comprehensive resource for automating and enhancing the publication process.
+    
 paths:
   /extractor/extract-text-pdf:
     get:
@@ -37,6 +38,8 @@ paths:
                           type: integer
                         text:
                           type: string
+                        paragraph_index:
+                          type: number
                     description: An array of objects containing page numbers and extracted texts.
         '400':
           description: Invalid file format or file does not exist
@@ -72,9 +75,12 @@ paths:
                       type: object
                       properties:
                         page_number:
-                          type: integer
+                          type: string
+                          example: Not directly available
                         text:
                           type: string
+                        paragraph_index:
+                          type: number
                     description: An array of objects containing page numbers and extracted texts.
         '400':
           description: Invalid file format or file does not exist

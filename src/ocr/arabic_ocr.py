@@ -34,12 +34,16 @@ def extract_text_from_image(pdf_bytes):
             image = Image.open(io.BytesIO(img_bytes))
             text = pytesseract.image_to_string(image, config=TESSERACT_CONFIG)
 
-            # Add extracted text from the page to the list
-            extracted_texts.append({
-                'page_number': page_number,
-                'text': text
-            })
-
+            # Split text into paragraphs and add to the list
+            paragraphs = text.split('\n')
+            for i, paragraph in enumerate(paragraphs):
+                if paragraph.strip():  # Skip empty paragraphs
+                    extracted_texts.append({
+                        'page_number': page_number,
+                        'paragraph_index': i + 1,  # Paragraph index within the page
+                        'text': paragraph
+                    })
+                    
         return extracted_texts
 
     except Exception as e:
