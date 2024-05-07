@@ -44,6 +44,12 @@ Please use the following dev environment:
 
   ```
 
+I want instructions of how to install tessaract and poppler on the README file.
+- Install Tesseract:
+  - Tesseract: Tesseract is an open-source OCR engine that can be used to extract text from images. You can download and install Tesseract from the [official website](https://github.com/tesseract-ocr/tesseract)
+  - Add the Tesseract binary to your PATH environment variable
+  - change the path to the tesseract.exe in the `src/ocr/arabic_ocr.py` file: `pytesseract.pytesseract.tesseract_cmd = 'C:/Program Files/Tesseract-OCR/tesseract.exe'` to the path of the tesseract binary on your machine.
+
 ### Run the FastAPI server to serve the AI backend API
 - Run the FastAPI app:
 
