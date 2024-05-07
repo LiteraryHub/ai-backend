@@ -2,9 +2,12 @@ import fitz  # PyMuPDF
 import pytesseract
 from PIL import Image
 import io
+import os
 
-# Configure pytesseract to use the Arabic language and your Tesseract path
-pytesseract.pytesseract.tesseract_cmd = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+# Set the default path for local development and use the environment variable for production
+# Default path on local Windows machines
+default_tesseract_path = 'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
+pytesseract.pytesseract.tesseract_cmd = os.getenv('TESSERACT_CMD', default_tesseract_path)
 TESSERACT_CONFIG = '--oem 3 --psm 6 -l ara'
 
 
