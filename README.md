@@ -10,8 +10,6 @@ The backend API is defined using a Swagger interface. You can find the detailed 
 
 The LiteraryHub platform enables publishers to generate book covers and audio books. It also allows authors to update unpublished books in Word or PDF format. Additionally, the platform includes features for plagiarism detection and restricted topics detection.
 
-
-
 ### Recommended dev environment
 
 Please use the following dev environment:
@@ -52,6 +50,11 @@ Please use the following dev environment:
   ```bash
   python -m uvicorn src.main:app --reload --proxy-headers --host 0.0.0.0 --port 8000 --log-config=config/log_conf.yaml
   ```
+
+- Run the FastAPI app with vscode debugger:
+    - Open the project in vscode
+    - Navigate to the debug tab
+    - Click on the play button to start the server
 
 ### Testing
 - **Unit Tests**: The `src/test` directory contains unit tests for each group or endpoint, ensuring comprehensive test coverage.
