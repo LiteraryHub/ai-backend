@@ -15,6 +15,7 @@ class TestDocumentProcessingAPI(unittest.TestCase):
         response = requests.get(f"{self.BASE_URL}/extractor/extract-text-pdf", params={"file_path": file_path})
         self.assertEqual(response.status_code, 200)
         self.assertIn('extracted_texts', response.json())
+        print(len(response.json()['extracted_texts']))
 
     def test_word_extraction(self):
         """Test Word extraction endpoint with a given file path."""
@@ -22,6 +23,7 @@ class TestDocumentProcessingAPI(unittest.TestCase):
         response = requests.get(f"{self.BASE_URL}/extractor/extract-text-word", params={"file_path": file_path})
         self.assertEqual(response.status_code, 200)
         self.assertIn('extracted_texts', response.json())
+        print(response.json())
 
     def test_invalid_pdf_request(self):
         """Test PDF extraction with an invalid file path."""

@@ -1,12 +1,58 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-import os
-import requests 
+import os 
 from src.nlp.plagiarism_checker.builder import add_embeddings
 from src.db.insert_book import insert_document_with_file
 from src.model.pydantic_model import Book
+from src.ocr.arabic_ocr import extract_text_from_image
+import io
+from docx import Document
 
 router = APIRouter()
+
+
+def extract_text_from_pdf(file_path: str):
+    """
+    Extracts text from a PDF file located at the given path using OCR configured for Arabic language.
+    """
+    file_path = file_path.replace("%2F", "\\")
+
+    try:
+        with open(file_path, "rb") as file:
+            extracted_texts = extract_text_from_image(file.read())
+        return {"extracted_texts": extracted_texts}
+    except ValueError as ve:
+        return None
+
+def extract_text_from_word(file_path: str):
+    """
+    Extracts text from a Word (.docx) file located at the given path.
+    """
+    file_path = file_path.replace("%2F", "\\")
+    
+    try:
+        # Open and read the Word file
+        with open(file_path, "rb") as file:
+            content = file.read()
+            document = Document(io.BytesIO(content))
+
+        # Extract texts with paragraph index and page numbers
+        extracted_texts = []
+        paragraph_index = 0
+        for para in document.paragraphs:
+            if para.text.strip():  # Ensure the paragraph contains text
+                extracted_texts.append({
+                    'paragraph_index': paragraph_index,
+                    # Page numbers are not directly available in .docx
+                    'page_number': 'Not directly available',
+                    'text': para.text
+                })
+                paragraph_index += 1
+
+        return {"extracted_texts": extracted_texts}
+    except Exception as e:
+        return None
+
 
 @router.post("/author-pipeline")
 async def author_pipeline(payload: Book):
@@ -48,34 +94,36 @@ async def author_pipeline(payload: Book):
         ```
 
     """
+    file_path = payload.file_path.replace("%2F", "\\")
+    print(file_path)
     # Check file existence and validate format
-    if not os.path.exists(payload.file_path):
-        return JSONResponse(status_code=404, detail="File not found. Please provide a valid file path.")
+    if not os.path.exists(file_path):
+        return JSONResponse(status_code=404, content="File not found. Please provide a valid file path.")
 
     file_type = None
     
-    if payload.file_path.endswith('.pdf'):
+    if file_path.endswith('.pdf'):
         file_type = "pdf"
-        response = requests.get(f"http://127.0.0.1/extractor/extract-text-pdf?file_path={payload.file_path}")
-    elif payload.file_path.endswith('.docx'):
+        text_objects = extract_text_from_pdf(file_path=file_path)
+    elif file_path.endswith('.docx'):
         file_type = "docx"
-        response = requests.get(f"http://127.0.0.1/extractor/extract-text-word?file_path={payload.file_path}")
+        text_objects = extract_text_from_word(file_path=file_path)
     else:
-        return JSONResponse(status_code=400, detail="Unsupported file format. Please provide a PDF or Word file.")
+        return JSONResponse(status_code=400, content="Unsupported file format. Please provide a PDF or Word file.")
 
 
     try:
         plaintext = ""
-        for paragraph in response.json()["extracted_texts"]:
+        for paragraph in text_objects["extracted_texts"]:
             plaintext += paragraph["text"]
             
         # Add embeddings to the extracted text (to use in the plagiarism checker) and return the result
         # TODO: Implement add the restricted topics boolean flag for each paragraph in the response.
-        document_semantic_info = add_embeddings(response.json())
+        document_semantic_info = add_embeddings(text_objects)
         
         book_id = insert_document_with_file(file_path=payload.file_path, file_type=file_type, title=payload.title, authors_ids=payload.authors_ids,
                                             plaintext=plaintext, book_summary=payload.book_summary, is_published=False, document_semantic_info=document_semantic_info)
         
         return JSONResponse(content={"book_id": book_id}, status_code=200)
     except Exception as e:
-        return JSONResponse(status_code=500, detail=f"An error occurred while processing the file: {str(e)}")
+        return JSONResponse(status_code=500, content=f"An error occurred while processing the file: {str(e)}")

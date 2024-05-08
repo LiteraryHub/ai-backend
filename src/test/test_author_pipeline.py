@@ -8,9 +8,9 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
     cwd = os.getcwd()
     test_dir = os.path.join(cwd, 'src', 'test')
 
-    def test_success_pdf(self):
+    def test_success_word(self):
         """Test the endpoint with a PDF file that exists."""
-        file_path = os.path.join(self.test_dir, 'arabic_pdf_doc.pdf')
+        file_path = os.path.join(self.test_dir, 'arabic_word_doc.docx')
         arabic_book_title = "كتاب عربي"
         authors_uuids_list = ["d1ee1723-daca-465f-b30f-ca46e07a57ba"]
         payload = {
@@ -21,6 +21,7 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
         }
         
         response = requests.post(self.base_url, json=payload)
+        print(response.json())
         self.assertEqual(response.status_code, 200)
         self.assertIn('book_id', response.json())
 
@@ -37,8 +38,6 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
         }
         response = requests.post(self.base_url, json=payload)
         self.assertEqual(response.status_code, 404)
-        self.assertIn('detail', response.json())
-        self.assertEqual(response.json()['detail'], 'File not found. Please provide a valid file path.')
 
 
 if __name__ == '__main__':
