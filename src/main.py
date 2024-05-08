@@ -5,6 +5,7 @@ import uvicorn
 from src.api.audiobook_generator.endpoints import router as audiobook_generator_router
 from src.api.extract_text.endpoints import router as text_extractor_router
 from src.api.book_cover_generator.endpoints import router as book_cover_generator_router
+from src.api.author_pipeline.endpoints import router as author_pipeline_router
 import warnings
 
 # Ignore PyTorch UserWarnings
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(audiobook_generator_router, prefix='/audiobook', tags=['Audiobook Generator'])
 app.include_router(text_extractor_router, prefix='/extractor', tags=['Text Extractor'])
 app.include_router(book_cover_generator_router, prefix='/book-cover', tags=['Book Cover Generator'])
+app.include_router(author_pipeline_router, prefix='/pipeline', tags=['Author Pipeline'])
 
 
 if __name__ == '__main__':
