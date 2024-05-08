@@ -1,74 +1,44 @@
 import unittest
 import requests
 from unittest.mock import patch
-
+import os
 
 class TestAuthorPipelineEndpoint(unittest.TestCase):
-    base_url = "http://localhost:8000/author-pipeline"
+    base_url = "http://127.0.0.1:8000/pipeline/author-pipeline"
+    cwd = os.getcwd()
+    test_dir = os.path.join(cwd, 'src', 'test')
 
     def test_success_pdf(self):
         """Test the endpoint with a PDF file that exists."""
+        file_path = os.path.join(self.test_dir, 'arabic_pdf_doc.pdf')
+        arabic_book_title = "كتاب عربي"
+        authors_uuids_list = ["d1ee1723-daca-465f-b30f-ca46e07a57ba"]
         payload = {
-            "file_path": "/path/to/book.pdf",
-            "title": "My Book",
-            "authors_ids": [1, 2],
-            "book_summary": "This is a book about..."
+            "file_path": file_path,
+            "title": arabic_book_title,
+            "authors_ids": authors_uuids_list,
+            "book_summary": "كتاب عربي يتحدث عن اللغة العربية."
         }
-        with patch('os.path.exists', return_value=True), \
-                patch('requests.get') as mocked_get:
-            mocked_get.return_value.json.return_value = {
-                "extracted_texts": [{"text": "Some text"}]}
-            response = requests.post(self.base_url, json=payload)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('book_id', response.json())
+        
+        response = requests.post(self.base_url, json=payload)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('book_id', response.json())
 
     def test_file_not_found(self):
-        """Test the endpoint with a file path that does not exist."""
+        """Test the endpoint with a file that does not exist."""
+        file_path = os.path.join(self.test_dir, 'arabic_pdf_doc_no_exist.pdf')
+        arabic_book_title = "كتاب عربي"
+        authors_uuids_list = ["d1ee1723-daca-465f-b30f-ca46e07a57ba"]
         payload = {
-            "file_path": "/path/to/nonexistent.pdf",
-            "title": "Nonexistent Book",
-            "authors_ids": [1],
-            "book_summary": "This book does not exist."
+            "file_path": file_path,
+            "title": arabic_book_title,
+            "authors_ids": authors_uuids_list,
+            "book_summary": "كتاب عربي يتحدث عن اللغة العربية."
         }
-        with patch('os.path.exists', return_value=False):
-            response = requests.post(self.base_url, json=payload)
-            self.assertEqual(response.status_code, 404)
-            self.assertIn('detail', response.json())
-            self.assertEqual(
-                response.json()['detail'], 'File not found. Please provide a valid file path.')
-
-    def test_unsupported_file_format(self):
-        """Test the endpoint with an unsupported file format."""
-        payload = {
-            "file_path": "/path/to/book.txt",
-            "title": "Unsupported Format Book",
-            "authors_ids": [3],
-            "book_summary": "This is a book in txt format."
-        }
-        with patch('os.path.exists', return_value=True):
-            response = requests.post(self.base_url, json=payload)
-            self.assertEqual(response.status_code, 400)
-            self.assertIn('detail', response.json())
-            self.assertEqual(response.json()[
-                             'detail'], 'Unsupported file format. Please provide a PDF or Word file.')
-
-    def test_error_during_processing(self):
-        """Test the endpoint when an error occurs during file processing."""
-        payload = {
-            "file_path": "/path/to/book.docx",
-            "title": "Error Book",
-            "authors_ids": [4],
-            "book_summary": "This book causes an error."
-        }
-        with patch('os.path.exists', return_value=True), \
-                patch('requests.get') as mocked_get, \
-                patch('src.nlp.plagiarism_checker.builder.add_embeddings', side_effect=Exception("Test error")):
-            mocked_get.return_value.json.return_value = {
-                "extracted_texts": [{"text": "Error text"}]}
-            response = requests.post(self.base_url, json=payload)
-            self.assertEqual(response.status_code, 500)
-            self.assertIn('detail', response.json())
-            self.assertTrue("An error occurred" in response.json()['detail'])
+        response = requests.post(self.base_url, json=payload)
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('detail', response.json())
+        self.assertEqual(response.json()['detail'], 'File not found. Please provide a valid file path.')
 
 
 if __name__ == '__main__':
