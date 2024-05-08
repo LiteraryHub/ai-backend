@@ -163,6 +163,64 @@ paths:
           description: Invalid input parameters
         '500':
           description: Server error
+  
+  /author-pipeline:
+    post:
+      summary: Processes a book file and inserts it into the database.
+      description: >
+        This endpoint handles the ingestion and processing of book documents. It supports files in PDF and Word formats. Upon receiving the request, it checks the file existence and format, extracts the text, and performs necessary preprocessing before inserting the book details into the database. This process includes registering the book title, authors, and summary, and associates it with the extracted content. It is designed to streamline the management of book records within a digital library system.
+      operationId: authorPipeline
+      tags:
+        - book processing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Book'
+            example:
+              file_path: "/path/to/book.pdf"
+              title: "My Book"
+              authors_ids: [1, 2]
+              book_summary: "This is a book about..."
+      responses:
+        '200':
+          description: Successfully processed and inserted the book data. Returns the book ID.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  book_id:
+                    type: integer
+                    description: The ID of the book that was inserted into the database.
+        '400':
+          description: The file format is not supported. Only PDF and Word files are supported.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '404':
+          description: The file specified in the payload does not exist.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+        '500':
+          description: An error occurred while processing the file.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
           
 components:
   schemas:
@@ -178,3 +236,20 @@ components:
         book_name:
           type: string
           description: The name of the book associated with the text
+    Book:
+      type: object
+      properties:
+        file_path:
+          type: string
+          description: Path to the book file.
+        title:
+          type: string
+          description: Title of the book.
+        authors_ids:
+          type: array
+          items:
+            type: integer
+          description: IDs of the authors of the book.
+        book_summary:
+          type: string
+          description: Summary of the book.
