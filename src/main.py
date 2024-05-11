@@ -57,5 +57,10 @@ app.include_router(restricted_topic_detection_router, prefix='/restricted-topic-
 app.include_router(author_pipeline_router, prefix='/pipeline', tags=['Author Pipeline'])
 
 
+@app.on_event("startup")
+async def startup_event():
+    start_ngrok()
+
+
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=8000)
