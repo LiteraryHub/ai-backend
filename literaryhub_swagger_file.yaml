@@ -248,7 +248,7 @@ paths:
                   detail:
                     type: string
                     example: "No extracted texts provided"
-      
+                    
   /restricted-topic-detection/v2/detect:
     post:
       summary: Detect Restricted Content
@@ -335,7 +335,7 @@ paths:
                   detail:
                     type: string
                     example: "No extracted texts provided"
-    operationId: detectRestrictedContent
+      
   
   /pipeline/author-pipeline:
     post:
