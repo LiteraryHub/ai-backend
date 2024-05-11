@@ -11,6 +11,14 @@ from pyngrok import ngrok
 import nest_asyncio
 import warnings
 
+# Setup function for ngrok
+def start_ngrok():
+    authtoken = "2Ue97ZgIffXxclCCYhsjDdFYjK9_4LE6HHTdrXZttvE2MJQ9Z"
+    ngrok.set_auth_token(authtoken)
+    tunnel = ngrok.connect(8000)
+    print('Public URL:', tunnel.public_url)
+    nest_asyncio.apply()
+
 # Ignore PyTorch UserWarnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
@@ -50,10 +58,4 @@ app.include_router(author_pipeline_router, prefix='/pipeline', tags=['Author Pip
 
 
 if __name__ == '__main__':
-    # Setup ngrok
-    authtoken = "2Ue97ZgIffXxclCCYhsjDdFYjK9_4LE6HHTdrXZttvE2MJQ9Z"
-    ngrok.set_auth_token(authtoken)
-    ngrok_tunnel = ngrok.connect(8000)
-    print('Public URL:', ngrok_tunnel.public_url)
-    nest_asyncio.apply()
     uvicorn.run(app, host="0.0.0.0", port=8000)
