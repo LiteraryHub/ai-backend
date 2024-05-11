@@ -5,6 +5,7 @@ from src.nlp.plagiarism_checker.builder import add_embeddings
 from src.db.insert_book import insert_document_with_file
 from src.model.pydantic_model import Book
 from src.ocr.arabic_ocr import extract_text_from_image
+from src.nlp.restricted_topic_detection.JAIS_detection import get_restricted_content_prediction
 import io
 from docx import Document
 
@@ -53,6 +54,24 @@ def extract_text_from_word(file_path: str):
     except Exception as e:
         return None
 
+def add_restricted_topics_flag(text_objects: dict):
+    """
+    Adds a 'is_safe' flag to each paragraph in the 'extracted_texts' list of the given 'text_objects' dictionary.
+    The 'is_safe' flag indicates whether the paragraph contains restricted content or not.
+
+    Parameters:
+    - text_objects (dict): A dictionary containing text objects.
+
+    Returns:
+    - None
+    """
+    for paragraph in text_objects["extracted_texts"]:
+        if get_restricted_content_prediction(paragraph["text"]) == 1:
+            paragraph["is_safe"] = False
+        else:
+            paragraph["is_safe"] = True
+        
+    return text_objects
 
 @router.post("/author-pipeline")
 async def author_pipeline(payload: Book):
@@ -117,8 +136,11 @@ async def author_pipeline(payload: Book):
         for paragraph in text_objects["extracted_texts"]:
             plaintext += paragraph["text"]
             
+        
+        # Add restricted topics flag to the extracted text
+        text_objects = add_restricted_topics_flag(text_objects)
+            
         # Add embeddings to the extracted text (to use in the plagiarism checker) and return the result
-        # TODO: Implement add the restricted topics boolean flag for each paragraph in the response.
         document_semantic_info = add_embeddings(text_objects)
         
         book_id = insert_document_with_file(file_path=payload.file_path, file_type=file_type, title=payload.title, authors_ids=payload.authors_ids,

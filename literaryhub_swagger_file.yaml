@@ -250,8 +250,7 @@ paths:
                   detail:
                     type: string
                     example: "No extracted texts provided"
-      operationId: detectRestrictedContent
-      
+                    
   /restricted-topic-detection/v2/detect:
     post:
       summary: Detect Restricted Content
@@ -338,8 +337,8 @@ paths:
                   detail:
                     type: string
                     example: "No extracted texts provided"
-      operationId: detectRestrictedContent
-  
+    operationId: detectRestrictedContent
+
   /pipeline/author-pipeline:
     post:
       summary: Processes a book file and inserts it into the database.
