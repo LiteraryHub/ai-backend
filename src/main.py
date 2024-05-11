@@ -7,6 +7,8 @@ from src.api.audiobook_generator.endpoints import router as audiobook_generator_
 from src.api.extract_text.endpoints import router as text_extractor_router
 from src.api.book_cover_generator.endpoints import router as book_cover_generator_router
 from src.api.author_pipeline.endpoints import router as author_pipeline_router
+from pyngrok import ngrok
+import nest_asyncio
 import warnings
 
 # Ignore PyTorch UserWarnings
@@ -48,4 +50,10 @@ app.include_router(author_pipeline_router, prefix='/pipeline', tags=['Author Pip
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=8000)
+    # Setup ngrok
+    authtoken = "2Ue97ZgIffXxclCCYhsjDdFYjK9_4LE6HHTdrXZttvE2MJQ9Z"
+    ngrok.set_auth_token(authtoken)
+    ngrok_tunnel = ngrok.connect(8000)
+    print('Public URL:', ngrok_tunnel.public_url)
+    nest_asyncio.apply()
+    uvicorn.run(app, host="0.0.0.0", port=8000)

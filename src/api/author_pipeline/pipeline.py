@@ -121,7 +121,7 @@ async def author_pipeline(file: UploadFile = File(...), title: str = "", authors
         plaintext = "".join(paragraph["text"] for paragraph in text_objects["extracted_texts"])
 
         # Add restricted topics flag and embeddings
-        text_objects = add_restricted_topics_flag(text_objects)
+        # text_objects = add_restricted_topics_flag(text_objects)
         document_semantic_info = add_embeddings(text_objects)
 
         # Insert into the database
@@ -130,8 +130,8 @@ async def author_pipeline(file: UploadFile = File(...), title: str = "", authors
 
         # Clean up the temporary file
         os.remove(temp_file_path)
-
-        return JSONResponse(content={"book_id": book_id}, status_code=200)
+        
+        return JSONResponse(content={"book_id": str(book_id)}, status_code=200)
     except Exception as e:
         # Ensure the temporary file is cleaned up in case of failure
         os.remove(temp_file_path)
