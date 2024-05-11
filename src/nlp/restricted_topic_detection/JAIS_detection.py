@@ -1,9 +1,6 @@
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from collections import Counter
-import os
-import json
-import time
 from tqdm import tqdm
 
 device = "cuda" if torch.cuda.is_available() else "cpu"

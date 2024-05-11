@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
-# from src.api.book_cover_generator.endpoints import router as book_cover_generator_router
+from warnings import simplefilter
+from src.api.restricted_topic_detection.endpoints import router as restricted_topic_detection_router
 from src.api.audiobook_generator.endpoints import router as audiobook_generator_router
 from src.api.extract_text.endpoints import router as text_extractor_router
 from src.api.book_cover_generator.endpoints import router as book_cover_generator_router
@@ -10,6 +11,12 @@ import warnings
 
 # Ignore PyTorch UserWarnings
 warnings.filterwarnings("ignore", category=UserWarning, module="torch")
+warnings.filterwarnings("ignore", category=FutureWarning, module="torch")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="torch")
+warnings.filterwarnings("ignore", category=UserWarning, module="transformers")
+warnings.filterwarnings("ignore", category=FutureWarning, module="transformers")
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="transformers")
+simplefilter(action='ignore', category=FutureWarning)
 
 # Create a new FastAPI app
 app = FastAPI(
@@ -33,10 +40,10 @@ app.add_middleware(
 )
 
 # Include the routers in the main app
-# app.include_router(book_cover_generator_router, prefix='/book-cover-generator', tags=['Book Cover Generator'])
 app.include_router(audiobook_generator_router, prefix='/audiobook', tags=['Audiobook Generator'])
 app.include_router(text_extractor_router, prefix='/extractor', tags=['Text Extractor'])
 app.include_router(book_cover_generator_router, prefix='/book-cover', tags=['Book Cover Generator'])
+app.include_router(restricted_topic_detection_router, prefix='/restricted-topic-detection', tags=['Restricted Topic Detection'])
 app.include_router(author_pipeline_router, prefix='/pipeline', tags=['Author Pipeline'])
 
 
