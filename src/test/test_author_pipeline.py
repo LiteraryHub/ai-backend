@@ -5,7 +5,7 @@ import os
 
 
 class TestAuthorPipelineEndpoint(unittest.TestCase):
-    base_url = "http://127.0.0.1:8000/pipeline/author-pipeline"
+    base_url = "https://da6b-45-240-51-111.ngrok-free.app/pipeline/author-pipeline"
     cwd = os.getcwd()
     test_dir = os.path.join(cwd, 'src', 'test')
 

@@ -121,7 +121,7 @@ async def author_pipeline(file: UploadFile = File(...), title: str = "", authors
         plaintext = "".join(paragraph["text"] for paragraph in text_objects["extracted_texts"])
 
         # Add restricted topics flag and embeddings
-        # text_objects = add_restricted_topics_flag(text_objects)
+        text_objects = add_restricted_topics_flag(text_objects)
         document_semantic_info = add_embeddings(text_objects)
 
         # Insert into the database
