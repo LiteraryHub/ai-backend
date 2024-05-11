@@ -341,21 +341,37 @@ paths:
     post:
       summary: Processes a book file and inserts it into the database.
       description: >
-        This endpoint handles the ingestion and processing of book documents. It supports files in PDF and Word formats. Upon receiving the request, it checks the file existence and format, extracts the text, and performs necessary preprocessing before inserting the book details into the database. This process includes registering the book title, authors, and summary, and associates it with the extracted content. It is designed to streamline the management of book records within a digital library system.
+        This endpoint receives a book file in PDF or Word format along with metadata, extracts text, and performs necessary preprocessing before inserting the book details into the database. The process includes registering the book title, authors, and summary, and associating it with the extracted content.
       operationId: authorPipeline
       tags:
         - book processing
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Book'
-            example:
-              file_path: "/path/to/book.pdf"
-              title: "My Book"
-              authors_ids: [1, 2]
-              book_summary: "This is a book about..."
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: The book file in PDF or Word format.
+                title:
+                  type: string
+                  description: The title of the book.
+                authors_ids:
+                  type: array
+                  items:
+                    type: integer
+                  description: The IDs of the authors of the book.
+                book_summary:
+                  type: string
+                  description: A summary of the book.
+            required:
+              - file
+              - title
+              - authors_ids
+              - book_summary
       responses:
         '200':
           description: Successfully processed and inserted the book data. Returns the book ID.
@@ -374,17 +390,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  content:
+                  message:
                     type: string
-        '404':
-          description: The file specified in the payload does not exist.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  content:
-                    type: string
+                    description: A description of the error.
         '500':
           description: An error occurred while processing the file.
           content:
@@ -392,8 +400,9 @@ paths:
               schema:
                 type: object
                 properties:
-                  content:
+                  message:
                     type: string
+                    description: A description of the error.
           
 components:
   schemas:

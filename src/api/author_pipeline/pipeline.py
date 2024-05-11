@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from fastapi.responses import JSONResponse
 import os 
 from src.nlp.plagiarism_checker.builder import add_embeddings
@@ -8,6 +8,10 @@ from src.ocr.arabic_ocr import extract_text_from_image
 from src.nlp.restricted_topic_detection.JAIS_detection import get_restricted_content_prediction
 import io
 from docx import Document
+import shutil
+from tempfile import NamedTemporaryFile
+from typing import List
+
 
 router = APIRouter()
 
@@ -73,79 +77,62 @@ def add_restricted_topics_flag(text_objects: dict):
         
     return text_objects
 
+
 @router.post("/author-pipeline")
-async def author_pipeline(payload: Book):
+async def author_pipeline(file: UploadFile = File(...), title: str = "", authors_ids: List[str] = [], book_summary: str = ""):
     """
     Endpoint for processing a book file and inserting it into the database.
 
     Args:
-        payload (Book): The payload containing information about the book. It should be an instance of the `Book` class.
+        file (UploadFile): The file to be processed.
+        title (str): The title of the book.
+        authors_ids (List[UUID]): The IDs of the authors of the book.
+        book_summary (str): A summary of the book.
 
     Returns:
         JSONResponse: The response containing the book ID if successful, or an error message if unsuccessful.
 
     Raises:
-        404: If the file specified in the payload does not exist.
         400: If the file format is not supported. Only PDF and Word files are supported.
         500: If an error occurs while processing the file.
 
     Notes:
-        - This endpoint expects a POST request with a JSON payload containing information about the book.
-        - The payload should include the following fields:
-            - `file_path` (str): The path to the book file.
-            - `title` (str): The title of the book.
-            - `authors_ids` (List[int]): The IDs of the authors of the book.
-            - `book_summary` (str): A summary of the book.
-
-    Example Usage:
-        ```
-        import requests
-
-        payload = {
-            "file_path": "/path/to/book.pdf",
-            "title": "My Book",
-            "authors_ids": [1, 2],
-            "book_summary": "This is a book about..."
-        }
-
-        response = requests.post("http://localhost:8000/author-pipeline", json=payload)
-        print(response.json())
-        ```
-
+        - This endpoint expects a POST request with multipart/form-data containing the file and metadata about the book.
     """
-    file_path = payload.file_path.replace("%2F", "\\")
-    print(file_path)
-    # Check file existence and validate format
-    if not os.path.exists(file_path):
-        return JSONResponse(status_code=404, content="File not found. Please provide a valid file path.")
+    # Check file type
+    valid_extensions = ('.pdf', '.docx')
+    file_extension = os.path.splitext(file.filename)[1]
+    if file_extension not in valid_extensions:
+        raise HTTPException(
+            status_code=400, detail="Unsupported file format. Please upload a PDF or Word file.")
 
-    file_type = None
-    
-    if file_path.endswith('.pdf'):
-        file_type = "pdf"
-        text_objects = extract_text_from_pdf(file_path=file_path)
-    elif file_path.endswith('.docx'):
-        file_type = "docx"
-        text_objects = extract_text_from_word(file_path=file_path)
-    else:
-        return JSONResponse(status_code=400, content="Unsupported file format. Please provide a PDF or Word file.")
+    # Create a temporary file
+    with NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
+        shutil.copyfileobj(file.file, temp_file)
+        temp_file_path = temp_file.name
 
-
+    # Process the file based on its type
     try:
-        plaintext = ""
-        for paragraph in text_objects["extracted_texts"]:
-            plaintext += paragraph["text"]
-            
-        
-        # Add restricted topics flag to the extracted text
+        if file_extension == '.pdf':
+            text_objects = extract_text_from_pdf(file_path=temp_file_path)
+        elif file_extension == '.docx':
+            text_objects = extract_text_from_word(file_path=temp_file_path)
+
+        plaintext = "".join(paragraph["text"] for paragraph in text_objects["extracted_texts"])
+
+        # Add restricted topics flag and embeddings
         text_objects = add_restricted_topics_flag(text_objects)
-            
-        # Add embeddings to the extracted text (to use in the plagiarism checker) and return the result
         document_semantic_info = add_embeddings(text_objects)
-        
-        book_id = insert_document_with_file(file_path=payload.file_path, file_type=file_type, title=payload.title, authors_ids=payload.authors_ids,
-                                            plaintext=plaintext, book_summary=payload.book_summary, is_published=False, document_semantic_info=document_semantic_info)
-        
+
+        # Insert into the database
+        book_id = insert_document_with_file(file_path=temp_file_path, file_type=file_extension[1:], title=title, authors_ids=authors_ids,
+                                            plaintext=plaintext, book_summary=book_summary, is_published=False, document_semantic_info=document_semantic_info)
+
+        # Clean up the temporary file
+        os.remove(temp_file_path)
+
         return JSONResponse(content={"book_id": book_id}, status_code=200)
     except Exception as e:
-        return JSONResponse(status_code=500, content=f"An error occurred while processing the file: {str(e)}")
+        # Ensure the temporary file is cleaned up in case of failure
+        os.remove(temp_file_path)
+        raise HTTPException(status_code=500, detail=f"An error occurred while processing the file: {str(e)}")
