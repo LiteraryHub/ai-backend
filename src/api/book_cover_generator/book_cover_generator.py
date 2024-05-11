@@ -19,10 +19,6 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 router = APIRouter()
 
-pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp16")
-pipeline.to(device)
-
-
 def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
     """
     Generates an image from a text prompt using a pretrained model.
@@ -35,6 +31,10 @@ def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
     Returns:
     PIL.Image: The generated image.
     """
+    
+    pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp16")
+    pipeline.to(device)
+
     return pipeline(prompt=prompt, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale).images[0]
 
 
