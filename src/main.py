@@ -13,7 +13,7 @@ import warnings
 
 # Setup function for ngrok
 def start_ngrok():
-    authtoken = "2Ue97ZgIffXxclCCYhsjDdFYjK9_4LE6HHTdrXZttvE2MJQ9Z"
+    authtoken = "2VPxAHwZLE2N2o426KIkbkl8x7e_2CnvonVdB7HrCARunpwup"
     ngrok.set_auth_token(authtoken)
     tunnel = ngrok.connect(8000)
     print('Public URL:', tunnel.public_url)
