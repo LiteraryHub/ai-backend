@@ -92,7 +92,7 @@ paths:
       tags:
         - audiobook
       summary: Converts text to speech
-      description: This endpoint receives text and converts it into spoken audio, returning the path to the generated MP3 file. Ideal for transforming book content into an easily accessible audiobook format.
+      description: This endpoint receives text and converts it into spoken audio, streaming it back as a WAV file. Ideal for transforming book content into an easily accessible audiobook format.
       operationId: textToSpeechV2
       requestBody:
         required: true
@@ -102,15 +102,13 @@ paths:
               $ref: '#/components/schemas/BookTextBody'
       responses:
         '200':
-          description: Successfully generated the audio file
+          description: Successfully streams the generated audio
           content:
-            application/json:
+            audio/wav:
               schema:
-                type: object
-                properties:
-                  audio_book_output_path:
-                    type: string
-                    description: The server path to the generated audio file in MP3 format
+                type: string
+                format: binary
+                description: The audio stream of the spoken text in WAV format.
         '400':
           description: Invalid request data
         '500':
@@ -250,7 +248,7 @@ paths:
                   detail:
                     type: string
                     example: "No extracted texts provided"
-                    
+      
   /restricted-topic-detection/v2/detect:
     post:
       summary: Detect Restricted Content
@@ -338,7 +336,7 @@ paths:
                     type: string
                     example: "No extracted texts provided"
     operationId: detectRestrictedContent
-
+  
   /pipeline/author-pipeline:
     post:
       summary: Processes a book file and inserts it into the database.

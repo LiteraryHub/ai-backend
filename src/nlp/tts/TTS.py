@@ -5,6 +5,7 @@ from src.nlp.tts.models.fastpitch import FastPitch2Wave
 from src.utils.utils import preprocess_arabic_text
 from pydub import AudioSegment
 import soundfile as sf
+from pydub import AudioSegment
 
 
 def split_text(text):
@@ -53,8 +54,19 @@ def text_to_speech(text_chunk, book_name, index):
     sf.write(filename, wave, 22050)
     return filename
 
+def concatenate_audios(audio_files):
+    """
+    Concatenates a list of audio files into a single audio file.
 
-def concatenate_audios(audio_files, output_path):
+    Args:
+        audio_files (list): A list of file paths to the audio files.
+
+    Returns:
+        AudioSegment: The combined audio segment.
+
+    Raises:
+        FileNotFoundError: If any of the audio files are not found.
+    """
     combined = AudioSegment.empty()
     
     if len(audio_files) > 1:
@@ -63,37 +75,39 @@ def concatenate_audios(audio_files, output_path):
     for file in audio_files:
         audio = AudioSegment.from_file(file)
         combined += audio
-    combined.export(output_path, format="wav")
+    
+    return combined
     
     
 def generate_audio_book(book_content, book_name):
-    output_path = os.path.join(os.getcwd(), 'src', 'nlp', 'tts', 'output', book_name)
-    
-    # Process text to speech
+    """
+    Generate an audio book from the given book content.
+
+    Args:
+        book_content (str): The content of the book.
+        book_name (str): The name of the book.
+
+    Returns:
+        bytes: The audio data of the generated audio book.
+    """
+    # Assume chunks are split and text_to_speech is defined somewhere to handle text to speech conversion.
+    # Assuming split_text function splits text into manageable chunks.
     chunks = split_text(book_content)
-    
+
     args = [(chunk, book_name, i) for i, chunk in enumerate(chunks)]
 
     audio_files = []
     with ThreadPoolExecutor() as executor:
+        # Assuming text_to_speech returns file paths.
         results = executor.map(text_to_speech, *zip(*args))
         audio_files = list(results)
 
-    # Concatenate audio files and cleanup
-    output_path = os.path.join(output_path, f"{book_name}.wav")
-    concatenate_audios(audio_files, output_path)
+    # Get the concatenated audio data
+    combined_audio = concatenate_audios(audio_files)
+
+    # Cleanup: remove temporary audio files
     for file in audio_files:
         os.remove(file)
 
-    return output_path
-
-
-
-
-
-if __name__ == '__main__':
-    # Example call to generate an audiobook
-    content = "أَلسَّلامُ عَلَيكُم يا صَديقي, هذا مثال لنص عربي يتم تحويله إلى كتاب صوتي"
-    book_name = "MyAudiobook"
-    audio_book_path = generate_audio_book(content, book_name)
-    print("Audio book created at:", audio_book_path)
+    # Instead of returning a path, return the audio data directly
+    return combined_audio
