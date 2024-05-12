@@ -20,7 +20,7 @@ class Book(BaseModel):
 
     
 class BookAuthorPipeline(BaseModel):
-    file: UploadFile = Field(...)
+    file: UploadFile
     title: str = Field(default="")
     authors_ids: List[str] = Field(default=[])
     book_summary: str = Field(default="")
