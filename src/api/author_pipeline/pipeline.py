@@ -96,6 +96,7 @@ async def author_pipeline(book: BookAuthorPipeline):
     Notes:
         - This endpoint expects a POST request with multipart/form-data containing the file and metadata about the book.
     """
+    print(book)
     # Check file type
     valid_extensions = ('.pdf', '.docx')
     file_extension = os.path.splitext(book.file.filename)[1]
