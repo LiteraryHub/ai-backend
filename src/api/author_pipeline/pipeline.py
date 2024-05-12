@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 import os 
 from src.nlp.plagiarism_checker.builder import add_embeddings
 from src.db.insert_book import insert_document_with_file
-from src.model.pydantic_model import Book
+from src.model.pydantic_model import BookAuthorPipeline
 from src.ocr.arabic_ocr import extract_text_from_image
 from src.nlp.restricted_topic_detection.JAIS_detection import get_restricted_content_prediction
 import io
@@ -79,15 +79,12 @@ def add_restricted_topics_flag(text_objects: dict):
 
 
 @router.post("/author-pipeline")
-async def author_pipeline(file: UploadFile = File(...), title: str = "", authors_ids: List[str] = [], book_summary: str = ""):
+async def author_pipeline(book: BookAuthorPipeline):
     """
     Endpoint for processing a book file and inserting it into the database.
 
     Args:
-        file (UploadFile): The file to be processed.
-        title (str): The title of the book.
-        authors_ids (List[UUID]): The IDs of the authors of the book.
-        book_summary (str): A summary of the book.
+        book (Book): The book data.
 
     Returns:
         JSONResponse: The response containing the book ID if successful, or an error message if unsuccessful.
@@ -101,14 +98,14 @@ async def author_pipeline(file: UploadFile = File(...), title: str = "", authors
     """
     # Check file type
     valid_extensions = ('.pdf', '.docx')
-    file_extension = os.path.splitext(file.filename)[1]
+    file_extension = os.path.splitext(book.file.filename)[1]
     if file_extension not in valid_extensions:
         raise HTTPException(
             status_code=400, detail="Unsupported file format. Please upload a PDF or Word file.")
 
     # Create a temporary file
     with NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
-        shutil.copyfileobj(file.file, temp_file)
+        shutil.copyfileobj(book.file.file, temp_file)
         temp_file_path = temp_file.name
 
     # Process the file based on its type
@@ -118,21 +115,23 @@ async def author_pipeline(file: UploadFile = File(...), title: str = "", authors
         elif file_extension == '.docx':
             text_objects = extract_text_from_word(file_path=temp_file_path)
 
-        plaintext = "".join(paragraph["text"] for paragraph in text_objects["extracted_texts"])
+        plaintext = "".join(paragraph["text"]
+                            for paragraph in text_objects["extracted_texts"])
 
         # Add restricted topics flag and embeddings
         text_objects = add_restricted_topics_flag(text_objects)
         document_semantic_info = add_embeddings(text_objects)
 
         # Insert into the database
-        book_id = insert_document_with_file(file_path=temp_file_path, file_type=file_extension[1:], title=title, authors_ids=authors_ids,
-                                            plaintext=plaintext, book_summary=book_summary, is_published=False, document_semantic_info=document_semantic_info)
+        book_id = insert_document_with_file(file_path=temp_file_path, file_type=file_extension[1:], title=book.title, authors_ids=book.authors_ids,
+                                            plaintext=plaintext, book_summary=book.book_summary, is_published=False, document_semantic_info=document_semantic_info)
 
         # Clean up the temporary file
         os.remove(temp_file_path)
-        
+
         return JSONResponse(content={"book_id": str(book_id)}, status_code=200)
     except Exception as e:
         # Ensure the temporary file is cleaned up in case of failure
         os.remove(temp_file_path)
-        raise HTTPException(status_code=500, detail=f"An error occurred while processing the file: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"An error occurred while processing the file: {str(e)}")
