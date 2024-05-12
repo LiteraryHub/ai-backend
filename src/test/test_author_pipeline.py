@@ -2,6 +2,7 @@ import unittest
 import requests
 from unittest.mock import patch
 import os
+import json 
 
 
 
@@ -14,15 +15,17 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
         """Test the endpoint with a DOCX file that exists."""
         file_path = os.path.join(self.test_dir, 'arabic_word_doc.docx')
         arabic_book_title = "كتاب عربي"
-        authors_uuids_list = [1, 2]  # Assuming authors_ids should be integers
+        # Convert author IDs to strings if required by the endpoint
+        authors_uuids_list = ["1", "2"]
         book_summary = "كتاب عربي يتحدث عن اللغة العربية."
 
         with open(file_path, 'rb') as f:
-            # files = {'file': (os.path.basename(file_path), f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document')}
             data = {'file': (os.path.basename(file_path), f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
                     'title': arabic_book_title,
-                    'authors_ids': authors_uuids_list, 'book_summary': book_summary}
-            response = requests.post(self.base_url, data=data, verify=False)
+                    'authors_ids': authors_uuids_list,
+                    'book_summary': book_summary}
+            response = requests.post(self.base_url, files={'file': f}, data={'title': arabic_book_title, 'authors_ids': json.dumps(
+                authors_uuids_list), 'book_summary': book_summary}, verify=False)
 
         print(response.json())
         self.assertEqual(response.status_code, 200)
