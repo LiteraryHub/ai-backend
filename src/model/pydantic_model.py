@@ -22,5 +22,5 @@ class Book(BaseModel):
 class BookAuthorPipeline(BaseModel):
     file: UploadFile = Field("")
     title: str = Field(default="")
-    authors_ids: List[str] = Field(default=[])
+    authors_ids: List = Field(default=[])
     book_summary: str = Field(default="")
