@@ -24,7 +24,7 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
                     'title': arabic_book_title,
                     'authors_ids': authors_uuids_list,
                     'book_summary': book_summary}
-            response = requests.post(self.base_url, files={'file': f}, data={'title': arabic_book_title, 'authors_ids': authors_uuids_list, 'book_summary': book_summary}, verify=False)
+            response = requests.post(self.base_url, data={'file': f, 'title': arabic_book_title, 'authors_ids': authors_uuids_list, 'book_summary': book_summary}, verify=False)
 
         print(response.json())
         self.assertEqual(response.status_code, 200)
