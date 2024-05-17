@@ -32,7 +32,6 @@ easyocr
 soundfile
 gtts
 phonemizer
-python-espeak
 sentencepiece
 datasets[audio]
 tqdm

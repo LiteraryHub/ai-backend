@@ -15,7 +15,7 @@ from src.nlp.summarization.english_text_summarization import generate_summary
 from src.utils.utils import *
 
 nltk.download('punkt')
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cpu')
 
 router = APIRouter()
 
