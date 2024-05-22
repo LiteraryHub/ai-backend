@@ -13,14 +13,84 @@ import nltk
 from src.nlp.translation.arabic_to_english import translate_arabic_to_english
 from src.nlp.summarization.english_text_summarization import generate_summary
 from src.utils.utils import *
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
 nltk.download('punkt')
-device = torch.device('cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 router = APIRouter()
 
 
-def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
+def count_tokens(english_text):
+    tokens = nltk.word_tokenize(english_text)
+    return len(tokens)
+
+
+def text_summarizer(text):
+    summarizer = pipeline("summarization", model="Falconsai/text_summarization")
+    return summarizer(text, max_length=77, min_length=30, do_sample=False)[0]["summary_text"]
+
+
+ARABIC_TO_ENGLISH = {
+    'ا': 'a',
+    'أ': 'a',
+    'إ': 'a',
+    'آ': 'a',
+
+    'ب': 'b',
+    'ت': 't',
+    'ث': 'th',
+    'ج': 'j',
+
+    'ح': 'h',
+    'خ': 'kh',
+    'د': 'd',
+    'ذ': 'th',
+
+    'ر': 'r',
+    'ز': 'z',
+    'س': 's',
+    'ش': 'sh',
+
+    'ص': 's',
+    'ض': 'd',
+    'ط': 't',
+    'ظ': 'z',
+
+    'ع': 'aa',
+    'غ': 'gh',
+    'ف': 'f',
+    'ق': 'q',
+
+    'ك': 'k',
+    'ل': 'l',
+    'م': 'm',
+    'ن': 'n',
+
+    'ه': 'h',
+    'ة': 'h',
+    'و': 'w',
+    'ي': 'y'
+}
+
+
+def replace_arabic_with_english_letters(text):
+    for arabic, english in ARABIC_TO_ENGLISH.items():
+        text = text.replace(arabic, english)
+    return text
+
+
+
+
+
+def arabic2english(text):
+    tokenizer = AutoTokenizer.from_pretrained("Helsinki-NLP/opus-mt-ar-en")
+    model = AutoModelForSeq2SeqLM.from_pretrained("Helsinki-NLP/opus-mt-ar-en")
+    input_ids = tokenizer(text, return_tensors="pt").input_ids
+    outputs = model.generate(input_ids=input_ids, num_beams=5, num_return_sequences=3)
+    return tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+
+def gen_img(prompt, num_inference_steps=10, guidance_scale=3.0):
     """
     Generates an image from a text prompt using a pretrained model.
 
@@ -33,8 +103,7 @@ def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
     PIL.Image: The generated image.
     """
 
-    pipeline = AutoPipelineForText2Image.from_pretrained(
-        "stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp16")
+    pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp16")
     pipeline.to(device)
 
     return pipeline(prompt=prompt, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale).images[0]
@@ -82,7 +151,6 @@ def blur_rectangle(image, x_percentage, y_percentage, width_percentage, height_p
     Returns:
     PIL.Image: The image with a blurred rectangle area.
     """
-    # Convert PIL image to NumPy array
     numpy_image = np.array(image)
 
     # Convert RGB to BGR (OpenCV uses BGR color format)
@@ -118,89 +186,77 @@ def blur_rectangle(image, x_percentage, y_percentage, width_percentage, height_p
     return pil_image
 
 
-def add_arabic_text(arabic_title, arabic_authors, image, x_percentage, y_percentage, width_percentage, height_percentage):
-    """
-    Adds Arabic text for the title and authors on a provided image.
+def add_en_text(english_title, arabic_title, arabic_authors, english_authors, image, x_percentage, y_percentage, width_percentage, height_percentage):
+    image_temp = image
+    # Convert PIL image to NumPy array
+    numpy_image = np.array(image_temp)
 
-    Args:
-    arabic_title (str): The book title in Arabic.
-    arabic_authors (list of str): The authors of the book in Arabic.
-    image (PIL.Image): The image on which to overlay the text.
-    x_percentage, y_percentage, width_percentage, height_percentage (float): The percentages defining the area to overlay text.
-
-    Returns:
-    PIL.Image: The image with added text.
-    """
-    cwd = os.getcwd()
-    font_path = os.path.join(cwd, 'src', 'font.ttf')
-
-    # Adjust the rectangle height based on title length
-    words_in_title = arabic_title.split()
-    if len(words_in_title) > 3:
-        # Increase height by 5% for each word above 3
-        height_percentage += 0.05 * (len(words_in_title) - 3)
-
-    # Convert PIL image to NumPy array for manipulation
-    numpy_image = np.array(image)
+    # Convert RGB to BGR (OpenCV uses BGR color format)
     image_temp = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
+
+    # Get image dimensions
     height, width, _ = image_temp.shape
 
-    # Recalculate rectangle dimensions with potential new height
+    # Calculate rectangle dimensions based on percentages
     x = int(width * x_percentage)
     y = int(height * y_percentage)
     w = int(width * width_percentage)
     h = int(height * height_percentage)
 
-    arabic_title_font = ImageFont.truetype(font_path, size=55)
-    arabic_title = arabic_reshaper.reshape(
-        arabic_title)  # Reshape for correct RTL rendering
+    title_font_resize = cv2.FONT_HERSHEY_SIMPLEX
+    arabic_title_font = ImageFont.truetype(
+        './font.ttf', size=55)
+    arabic_title = arabic_reshaper.reshape(arabic_title)
 
-    # Place title in the upper middle of the rectangle
+    # Add text to the center of the blurred rectangle
     title_text_size = cv2.getTextSize(
-        arabic_title, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+        english_title, title_font_resize, 1, 2)[0]
     title_text_x = x - title_text_size[0] // 2
-    title_text_y = y - h // 4  # Adjust for title to be in upper middle
+    title_text_y = (y + title_text_size[1] // 2) - 150
 
-    image = Image.fromarray(cv2.cvtColor(image_temp, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(image)
-    draw.text((title_text_x, title_text_y), get_display(
+    image = ImageDraw.Draw(image)
+    image.text((title_text_x, title_text_y), get_display(
         arabic_title), font=arabic_title_font, fill='black')
 
-    # Draw authors under the title
-    authors_arabic_title_font = ImageFont.truetype(font_path, size=30)
-    authors_text_y = title_text_y + 70  # Start authors 70 pixels below the title
-    for author in arabic_authors:
-        reshaped_author = arabic_reshaper.reshape(author)
-        author_text_size = cv2.getTextSize(
-            reshaped_author, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
-        author_text_x = x - author_text_size[0] // 2 + 30
-        draw.text((author_text_x, authors_text_y), get_display(
-            reshaped_author), font=authors_arabic_title_font, fill='black')
-        authors_text_y += 40  # Space subsequent authors 40 pixels apart
+    authors_font = cv2.FONT_ITALIC
 
+    counter = 50
+    authors_arabic_title_font = ImageFont.truetype(
+        './font.ttf', size=30)
+    for i in range(len(english_authors)):
+        authors_text_size = cv2.getTextSize(
+            english_authors[i], authors_font, 1, 2)[0]
+        authors_text_x = x - authors_text_size[0] // 2 + 30
+        authors_text_y = (y + authors_text_size[1] // 2) - counter
+        image.text((authors_text_x, authors_text_y), get_display(arabic_reshaper.reshape(
+            arabic_authors[i])), font=authors_arabic_title_font, fill='black')
+        counter = counter - 30
+
+    # result_img = cv2.cvtColor(result_img, cv2.COLOR_BGR2RGB)
+
+    # # # Convert numpy array to PIL Image
+    # # pil_image = Image.fromarray(result_img)
+    # # return pil_image
     return image
 
 
 def generate_book_cover(arabic_title, arabic_authors, book_summary, num_inference_steps, guidance_scale):
-    # Translate book summary to English to use in image generation
-    english_book_summary = translate_arabic_to_english(book_summary)
+    english_book_summary = arabic2english(book_summary)
 
-    # Optionally, summarize the book summary if it is too long
     if count_tokens(english_book_summary) > 77:
-        english_book_summary = generate_summary(english_book_summary)
+        english_book_summary = text_summarizer(english_book_summary)
 
-    # Generate an image based on the English book summary
-    gen_image = gen_img(prompt=english_book_summary,
-                        num_inference_steps=num_inference_steps, guidance_scale=guidance_scale)
+    english_title = arabic2english(arabic_title)
+    gen_image = gen_img(prompt=english_book_summary, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale)
     resized_img = resize_gen_img(gen_image)
+    base_cover = blur_rectangle(image=resized_img, x_percentage=0.5, y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
 
-    # Apply a blur effect to a portion of the image to overlay text
-    base_cover = blur_rectangle(image=resized_img, x_percentage=0.5,
-                                y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
+    english_authors = []
+    for i in range(len(arabic_authors)):
+        english_authors.append(replace_arabic_with_english_letters(arabic_authors[i]))
 
-    # Add Arabic text to the image
-    result_cover = add_arabic_text(arabic_title, arabic_authors, base_cover,
-                                   x_percentage=0.5, y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
+    result_cover = add_en_text(english_title, arabic_title, arabic_authors, english_authors,
+                               base_cover, x_percentage=0.5, y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
 
     return result_cover
 
@@ -214,8 +270,8 @@ async def get_book_cover(payload: dict):
     book_title = data.get('book_title')
     book_summary = data.get('book_summary')
     arabic_authors = data.get('arabic_authors', [])
-    num_inference_steps = data.get('num_inference_steps', 5)
-    guidance_scale = data.get('guidance_scale', 0.6)
+    num_inference_steps = data.get('num_inference_steps', 10)
+    guidance_scale = data.get('guidance_scale', 3)
 
     # Generate the book cover
     book_cover = generate_book_cover(
