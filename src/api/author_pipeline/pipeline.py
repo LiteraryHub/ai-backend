@@ -101,8 +101,7 @@ async def author_pipeline(book: BookAuthorPipeline):
     valid_extensions = ('.pdf', '.docx')
     file_extension = os.path.splitext(book.file.filename)[1]
     if file_extension not in valid_extensions:
-        raise HTTPException(
-            status_code=400, detail="Unsupported file format. Please upload a PDF or Word file.")
+        raise JSONResponse(status_code=400, content="Unsupported file format. Please upload a PDF or Word file.")
 
     # Create a temporary file
     with NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
@@ -134,5 +133,4 @@ async def author_pipeline(book: BookAuthorPipeline):
     except Exception as e:
         # Ensure the temporary file is cleaned up in case of failure
         os.remove(temp_file_path)
-        raise HTTPException(
-            status_code=500, detail=f"An error occurred while processing the file: {str(e)}")
+        raise JSONResponse(status_code=500, content=f"An error occurred while processing the file: {str(e)}")

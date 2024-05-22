@@ -3,7 +3,7 @@ import torch
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from fastapi import APIRouter
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 import cv2
 import arabic_reshaper
 from bidi.algorithm import get_display
@@ -19,10 +19,11 @@ device = torch.device('cpu')
 
 router = APIRouter()
 
+
 def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
     """
     Generates an image from a text prompt using a pretrained model.
-    
+
     Args:
     prompt (str): The text prompt to generate the image.
     num_inference_steps (int): The number of steps for the generation process.
@@ -31,8 +32,9 @@ def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
     Returns:
     PIL.Image: The generated image.
     """
-    
-    pipeline = AutoPipelineForText2Image.from_pretrained("stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp16")
+
+    pipeline = AutoPipelineForText2Image.from_pretrained(
+        "stabilityai/sdxl-turbo", torch_dtype=torch.float32, variant="fp16")
     pipeline.to(device)
 
     return pipeline(prompt=prompt, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale).images[0]
@@ -41,7 +43,7 @@ def gen_img(prompt, num_inference_steps=5, guidance_scale=1.0):
 def resize_gen_img(img):
     """
     Resizes a PIL image to a specific dimension suitable for book covers.
-    
+
     Args:
     img (PIL.Image): The image to resize.
 
@@ -69,7 +71,7 @@ def resize_gen_img(img):
 def blur_rectangle(image, x_percentage, y_percentage, width_percentage, height_percentage):
     """
     Applies a blur effect to a specified rectangle area in an image.
-    
+
     Args:
     image (PIL.Image): The original image.
     x_percentage (float): The x-coordinate as a percentage of the image width.
@@ -119,7 +121,7 @@ def blur_rectangle(image, x_percentage, y_percentage, width_percentage, height_p
 def add_arabic_text(arabic_title, arabic_authors, image, x_percentage, y_percentage, width_percentage, height_percentage):
     """
     Adds Arabic text for the title and authors on a provided image.
-    
+
     Args:
     arabic_title (str): The book title in Arabic.
     arabic_authors (list of str): The authors of the book in Arabic.
@@ -150,25 +152,30 @@ def add_arabic_text(arabic_title, arabic_authors, image, x_percentage, y_percent
     h = int(height * height_percentage)
 
     arabic_title_font = ImageFont.truetype(font_path, size=55)
-    arabic_title = arabic_reshaper.reshape(arabic_title)  # Reshape for correct RTL rendering
+    arabic_title = arabic_reshaper.reshape(
+        arabic_title)  # Reshape for correct RTL rendering
 
     # Place title in the upper middle of the rectangle
-    title_text_size = cv2.getTextSize(arabic_title, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+    title_text_size = cv2.getTextSize(
+        arabic_title, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
     title_text_x = x - title_text_size[0] // 2
     title_text_y = y - h // 4  # Adjust for title to be in upper middle
 
     image = Image.fromarray(cv2.cvtColor(image_temp, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(image)
-    draw.text((title_text_x, title_text_y), get_display(arabic_title), font=arabic_title_font, fill='black')
+    draw.text((title_text_x, title_text_y), get_display(
+        arabic_title), font=arabic_title_font, fill='black')
 
     # Draw authors under the title
     authors_arabic_title_font = ImageFont.truetype(font_path, size=30)
     authors_text_y = title_text_y + 70  # Start authors 70 pixels below the title
     for author in arabic_authors:
         reshaped_author = arabic_reshaper.reshape(author)
-        author_text_size = cv2.getTextSize(reshaped_author, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+        author_text_size = cv2.getTextSize(
+            reshaped_author, cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
         author_text_x = x - author_text_size[0] // 2 + 30
-        draw.text((author_text_x, authors_text_y), get_display(reshaped_author), font=authors_arabic_title_font, fill='black')
+        draw.text((author_text_x, authors_text_y), get_display(
+            reshaped_author), font=authors_arabic_title_font, fill='black')
         authors_text_y += 40  # Space subsequent authors 40 pixels apart
 
     return image
@@ -183,14 +190,17 @@ def generate_book_cover(arabic_title, arabic_authors, book_summary, num_inferenc
         english_book_summary = generate_summary(english_book_summary)
 
     # Generate an image based on the English book summary
-    gen_image = gen_img(prompt=english_book_summary, num_inference_steps=num_inference_steps, guidance_scale=guidance_scale)
+    gen_image = gen_img(prompt=english_book_summary,
+                        num_inference_steps=num_inference_steps, guidance_scale=guidance_scale)
     resized_img = resize_gen_img(gen_image)
 
     # Apply a blur effect to a portion of the image to overlay text
-    base_cover = blur_rectangle(image=resized_img, x_percentage=0.5, y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
+    base_cover = blur_rectangle(image=resized_img, x_percentage=0.5,
+                                y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
 
     # Add Arabic text to the image
-    result_cover = add_arabic_text(arabic_title, arabic_authors, base_cover, x_percentage=0.5, y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
+    result_cover = add_arabic_text(arabic_title, arabic_authors, base_cover,
+                                   x_percentage=0.5, y_percentage=0.8, width_percentage=0.9, height_percentage=0.3)
 
     return result_cover
 
@@ -214,10 +224,9 @@ async def get_book_cover(payload: dict):
         guidance_scale=guidance_scale
     )
 
-    # Get the image from the book cover
-    image = book_cover._image
-
+    # Convert the PIL Image to bytes
     img_bytesio = BytesIO()
-    image.save(img_bytesio, format='PNG')
+    book_cover.save(img_bytesio, format='PNG')
     img_bytesio.seek(0)
-    return FileResponse(img_bytesio, media_type='image/png', filename='book_cover.png')
+
+    return StreamingResponse(img_bytesio, media_type='image/png', headers={'Content-Disposition': 'attachment; filename=book_cover.png'})

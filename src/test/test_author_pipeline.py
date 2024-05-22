@@ -15,21 +15,35 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
         """Test the endpoint with a DOCX file that exists."""
         file_path = os.path.join(self.test_dir, 'arabic_word_doc.docx')
         arabic_book_title = "كتاب عربي"
-        # Convert author IDs to strings if required by the endpoint
-        authors_uuids_list = ["1", "2"]
+        authors_uuids_list = [1, 2]  # Assuming authors_ids should be integers
         book_summary = "كتاب عربي يتحدث عن اللغة العربية."
 
         with open(file_path, 'rb') as f:
-            data = {'file': (os.path.basename(file_path), f, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
-                    'title': arabic_book_title,
-                    'authors_ids': authors_uuids_list,
-                    'book_summary': book_summary}
-            response = requests.post(self.base_url, data={'file': f, 'title': arabic_book_title, 'authors_ids': authors_uuids_list, 'book_summary': book_summary}, verify=False)
+            files = {
+                'file': (
+                    os.path.basename(file_path),
+                    f,
+                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                )
+            }
+            data = {
+                'title': arabic_book_title,
+                'authors_ids': authors_uuids_list,
+                'book_summary': book_summary
+            }
+            response = requests.post(self.base_url, files=files, data=data)
 
-        print(response.json())
-        self.assertEqual(response.status_code, 200)
-        self.assertIn('book_id', response.json())
+        print(f"Status Code: {response.status_code}")
+        print(f"Response Text: {response.text}")
 
+        try:
+            response_json = response.json()
+            print(response_json)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn('book_id', response_json)
+        except requests.exceptions.JSONDecodeError:
+            print("Response is not in JSON format.")
+            self.fail("Response is not in JSON format.")
     # def test_file_not_found(self):
     #     """This test should be updated to test an error scenario that can be captured, such as invalid file type."""
     #     arabic_book_title = "كتاب عربي"
