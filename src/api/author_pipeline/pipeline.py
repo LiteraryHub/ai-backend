@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, Form
 from fastapi.responses import JSONResponse
 import os 
 from src.nlp.plagiarism_checker.builder import add_embeddings
@@ -79,7 +79,7 @@ def add_restricted_topics_flag(text_objects: dict):
 
 
 @router.post("/author-pipeline")
-async def author_pipeline(book: BookAuthorPipeline):
+async def author_pipeline(title: str = Form(...), authors_ids: List[str] = Form(...), book_summary: str = Form(...), file: UploadFile = File(...)):
     """
     Endpoint for processing a book file and inserting it into the database.
 
@@ -96,16 +96,15 @@ async def author_pipeline(book: BookAuthorPipeline):
     Notes:
         - This endpoint expects a POST request with multipart/form-data containing the file and metadata about the book.
     """
-    print(book)
     # Check file type
     valid_extensions = ('.pdf', '.docx')
-    file_extension = os.path.splitext(book.file.filename)[1]
+    file_extension = os.path.splitext(file.filename)[1]
     if file_extension not in valid_extensions:
         raise JSONResponse(status_code=400, content="Unsupported file format. Please upload a PDF or Word file.")
 
     # Create a temporary file
     with NamedTemporaryFile(delete=False, suffix=file_extension) as temp_file:
-        shutil.copyfileobj(book.file.file, temp_file)
+        shutil.copyfileobj(file.file, temp_file)
         temp_file_path = temp_file.name
 
     # Process the file based on its type
@@ -123,8 +122,8 @@ async def author_pipeline(book: BookAuthorPipeline):
         document_semantic_info = add_embeddings(text_objects)
 
         # Insert into the database
-        book_id = insert_document_with_file(file_path=temp_file_path, file_type=file_extension[1:], title=book.title, authors_ids=book.authors_ids,
-                                            plaintext=plaintext, book_summary=book.book_summary, is_published=False, document_semantic_info=document_semantic_info)
+        book_id = insert_document_with_file(file_path=temp_file_path, file_type=file_extension[1:], title=title, authors_ids=authors_ids,
+                                            plaintext=plaintext, book_summary=book_summary, is_published=False, document_semantic_info=document_semantic_info)
 
         # Clean up the temporary file
         os.remove(temp_file_path)

@@ -8,6 +8,7 @@ import json
 
 class TestAuthorPipelineEndpoint(unittest.TestCase):
     base_url = "https://da6b-45-240-51-111.ngrok-free.app/pipeline/author-pipeline"
+    # base_url = "http://localhost:8000/pipeline/author-pipeline"
     cwd = os.getcwd()
     test_dir = os.path.join(cwd, 'src', 'test')
 
@@ -15,7 +16,7 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
         """Test the endpoint with a DOCX file that exists."""
         file_path = os.path.join(self.test_dir, 'arabic_word_doc.docx')
         arabic_book_title = "كتاب عربي"
-        authors_uuids_list = [1, 2]  # Assuming authors_ids should be integers
+        authors_uuids_list = ["1", "2"]  # Assuming authors_ids should be integers
         book_summary = "كتاب عربي يتحدث عن اللغة العربية."
 
         with open(file_path, 'rb') as f:
@@ -31,7 +32,11 @@ class TestAuthorPipelineEndpoint(unittest.TestCase):
                 'authors_ids': authors_uuids_list,
                 'book_summary': book_summary
             }
-            response = requests.post(self.base_url, files=files, data=data)
+            # Converting authors_uuids_list to string
+            data_str = {key: str(value) if isinstance(
+                value, list) else value for key, value in data.items()}
+
+            response = requests.post(self.base_url, files=files, data=data_str)
 
         print(f"Status Code: {response.status_code}")
         print(f"Response Text: {response.text}")
