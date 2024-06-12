@@ -54,7 +54,7 @@ I want instructions of how to install tessaract and poppler on the README file.
 - Run the FastAPI app:
 
   ```bash
-  python -m uvicorn src.main:app --reload --proxy-headers --host 0.0.0.0 --port 8000 --log-config=config/log_conf.yaml
+  python -m uvicorn src.main:app --reload --proxy-headers --host 0.0.0.0 --port 8000
   ```
 
 - Run the FastAPI app with vscode debugger:
